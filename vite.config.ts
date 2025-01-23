@@ -11,7 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: "index.html",
-        ...pagesHelper(["react-virtualized"]),
+        ...pagesHelper(["react-virtuoso"]),
       },
       output: {
         entryFileNames: "assets/[name].js",
