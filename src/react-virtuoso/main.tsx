@@ -5,7 +5,7 @@ import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 import { loadMoreRows, CHUNK_SIZE, indexBasedStyle } from "../utils";
 import Title from "../components/Title";
-import ScrollButton from "../components/ScrollButton";
+import ScrollPanel from "../components/ScrollPanel";
 
 const INITIAL_ITEM_INDEX = 500;
 
@@ -38,10 +38,23 @@ const App = () => {
   );
 
   const ref = useRef<VirtuosoHandle>(null);
-  const onClick = useCallback(() => {
-    if (!ref.current) return;
-    ref.current.scrollToIndex({ index: 10, align: "start" });
-  }, []);
+  const scrollTo = useCallback(
+    async (index: number) => {
+      if (!ref.current) return;
+
+      if (index >= firstItemIndex && index < firstItemIndex + rows.length) {
+        ref.current.scrollToIndex({
+          index: index - firstItemIndex,
+          align: "start",
+        });
+      } else {
+        const newRows = await loadMoreRows("down", index);
+        setRows(newRows);
+        setFirstItemIndex(index);
+      }
+    },
+    [firstItemIndex, rows],
+  );
 
   return (
     <div className="p-4 flex flex-col gap-1">
@@ -50,7 +63,7 @@ const App = () => {
           name="react-virtuoso"
           link="https://github.com/petyosi/react-virtuoso"
         />
-        <ScrollButton onClick={onClick} />
+        <ScrollPanel scrollTo={scrollTo} />
       </div>
       <Virtuoso
         ref={ref}

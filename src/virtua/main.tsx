@@ -9,7 +9,7 @@ import {
   indexBasedStyle,
 } from "../utils";
 import Title from "../components/Title";
-import ScrollButton from "../components/ScrollButton";
+import ScrollPanel from "../components/ScrollPanel";
 
 const INITIAL_ITEM_INDEX = 500;
 
@@ -61,16 +61,28 @@ const App = () => {
     }
   }, [rows]);
 
-  const onClick = useCallback(() => {
-    if (!ref.current) return;
-    ref.current.scrollToIndex(10, { align: "start" });
-  }, []);
+  const scrollTo = useCallback(
+    async (index: number) => {
+      if (!ref.current) return;
+
+      const firstItemIndex_ = firstItemIndex.current;
+      if (index >= firstItemIndex_ && index < firstItemIndex_ + rows.length) {
+        ref.current.scrollToIndex(index - firstItemIndex_, { align: "start" });
+      } else {
+        const newRows = await loadMoreRows("down", index);
+        setShift(false);
+        setRows(newRows);
+        firstItemIndex.current = index;
+      }
+    },
+    [rows],
+  );
 
   return (
     <div className="p-4 flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <Title name="virtua" link="https://github.com/inokawa/virtua" />
-        <ScrollButton onClick={onClick} />
+        <ScrollPanel scrollTo={scrollTo} />
       </div>
       <div className="h-[300px] overflow-y-auto">
         <Virtualizer ref={ref} onScroll={onScroll} shift={shift}>
