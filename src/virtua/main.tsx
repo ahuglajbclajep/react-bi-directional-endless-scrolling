@@ -61,11 +61,16 @@ const App = () => {
     }
   }, [rows]);
 
+  const onClick = useCallback(() => {
+    if (!ref.current) return;
+    ref.current.scrollToIndex(10, { align: "start" });
+  }, []);
+
   return (
     <div className="p-4 flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <Title name="virtua" link="https://github.com/inokawa/virtua" />
-        <ScrollButton onClick={() => {}} />
+        <ScrollButton onClick={onClick} />
       </div>
       <div className="h-[300px] overflow-y-auto">
         <Virtualizer ref={ref} onScroll={onScroll} shift={shift}>

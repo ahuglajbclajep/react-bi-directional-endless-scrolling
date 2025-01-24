@@ -40,11 +40,7 @@ const App = () => {
   const ref = useRef<VirtuosoHandle>(null);
   const onClick = useCallback(() => {
     if (!ref.current) return;
-    ref.current.scrollToIndex({
-      index: 0,
-      align: "center",
-      behavior: "auto",
-    });
+    ref.current.scrollToIndex({ index: 10, align: "start" });
   }, []);
 
   return (
