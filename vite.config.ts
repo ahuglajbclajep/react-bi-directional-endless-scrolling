@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const pagesHelper = (pages: string[]) =>
-  Object.fromEntries(pages.map((page) => [page, `src/${page}/main.tsx`]));
+const inputHelper = (inputs: string[]) =>
+  Object.fromEntries(inputs.map((input) => [input, `src/${input}/main.tsx`]));
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,7 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: "index.html",
-        ...pagesHelper(["react-virtuoso"]),
+        ...inputHelper(["react-virtuoso", "virtua"]),
       },
       output: {
         entryFileNames: "assets/[name].js",
