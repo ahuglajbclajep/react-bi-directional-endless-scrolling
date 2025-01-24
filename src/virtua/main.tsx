@@ -3,13 +3,19 @@ import { createRoot } from "react-dom/client";
 
 import { Virtualizer, type VirtualizerHandle } from "virtua";
 
-import { loadMoreRows as loadMoreRows_, CHUNK_SIZE } from "../utils";
-import { Title } from "../Components";
+import {
+  loadMoreRows as loadMoreRows_,
+  CHUNK_SIZE,
+  indexBasedStyle,
+} from "../utils";
+import Title from "../components/Title";
+import ScrollButton from "../components/ScrollButton";
 
 const INITIAL_ITEM_INDEX = 500;
 
 const App = () => {
   const [rows, setRows] = useState<string[]>([]);
+  // SEE: https://github.com/inokawa/virtua/blob/0.39.3/docs/react/interfaces/VirtualizerProps.md#shift
   const [shift, setShift] = useState(false);
 
   // NOTE: API が絶対的なインデックスを必要としない場合は不要
@@ -37,11 +43,9 @@ const App = () => {
 
   const ref = useRef<VirtualizerHandle>(null);
   const onScroll = useCallback(async () => {
-    console.log(isLoading.current);
     if (!ref.current || isLoading.current) return;
 
     const rowCount = rows.length;
-
     if (ref.current.findEndIndex() + 1 === rowCount) {
       const newRows = await loadMoreRows(
         "down",
@@ -61,19 +65,14 @@ const App = () => {
     <div className="p-4 flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <Title name="virtua" link="https://github.com/inokawa/virtua" />
+        <ScrollButton onClick={() => {}} />
       </div>
       <div className="h-[300px] overflow-y-auto">
         <Virtualizer ref={ref} onScroll={onScroll} shift={shift}>
           {rows.map((row) => {
             const index = Number(row.split("#")[1]);
             return (
-              <div
-                key={index}
-                style={{
-                  backgroundColor: `hsl(${(index * 97) % 360}, 70%, 80%)`,
-                  height: `${Math.max((index * 97) % 120, 32)}px`,
-                }}
-              >
+              <div key={index} style={indexBasedStyle(index)}>
                 {row}
               </div>
             );

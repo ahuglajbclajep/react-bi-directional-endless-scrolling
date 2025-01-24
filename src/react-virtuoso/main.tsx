@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
-import { loadMoreRows, CHUNK_SIZE } from "../utils";
-import { Title, ScrollButton } from "../Components";
+
+import { loadMoreRows, CHUNK_SIZE, indexBasedStyle } from "../utils";
+import Title from "../components/Title";
+import ScrollButton from "../components/ScrollButton";
 
 const INITIAL_ITEM_INDEX = 500;
 
@@ -17,6 +20,14 @@ const App = () => {
     })();
   }, []);
 
+  const loadMoreRowsDown = useCallback(
+    async (rowCount: number) => {
+      const newRows = await loadMoreRows("down", firstItemIndex + rowCount + 1);
+      setRows((rows) => [...rows, ...newRows]);
+    },
+    [rows, firstItemIndex],
+  );
+
   const loadMoreRowsUp = useCallback(
     async (index: number) => {
       const newRows = await loadMoreRows("up", index);
@@ -26,24 +37,13 @@ const App = () => {
     [rows],
   );
 
-  const loadMoreRowsDown = useCallback(
-    async (lastIndex: number) => {
-      const newRows = await loadMoreRows(
-        "down",
-        firstItemIndex + lastIndex + 1,
-      );
-      setRows((rows) => [...rows, ...newRows]);
-    },
-    [rows, firstItemIndex],
-  );
-
-  const virtuoso = useRef<VirtuosoHandle>(null);
+  const ref = useRef<VirtuosoHandle>(null);
   const onClick = useCallback(() => {
-    if (!virtuoso.current) return;
-    virtuoso.current.scrollToIndex({
+    if (!ref.current) return;
+    ref.current.scrollToIndex({
       index: 0,
       align: "center",
-      behavior: "smooth",
+      behavior: "auto",
     });
   }, []);
 
@@ -57,21 +57,15 @@ const App = () => {
         <ScrollButton onClick={onClick} />
       </div>
       <Virtuoso
-        ref={virtuoso}
-        style={{ height: 400 }}
+        ref={ref}
+        style={{ height: 300 }}
         data={rows}
         firstItemIndex={firstItemIndex}
         startReached={loadMoreRowsUp}
         endReached={loadMoreRowsDown}
         itemContent={(index, rows) => {
           return (
-            <div
-              key={index}
-              style={{
-                backgroundColor: `hsl(${(index * 97) % 360}, 70%, 80%)`,
-                height: `${Math.max((index * 97) % 120, 32)}px`,
-              }}
-            >
+            <div key={index} style={indexBasedStyle(index)}>
               {rows}
             </div>
           );
