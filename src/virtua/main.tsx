@@ -33,13 +33,19 @@ const App = () => {
     [],
   );
 
+  // NOTE: 上方向へのスクロールを可能にするため、最初に一度だけスクロール時の処理を呼ぶ
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     (async () => {
       const newRows = await loadMoreRows("down", firstItemIndex.current);
       setShift(false);
       setRows(newRows);
+      setReady(true);
     })();
   }, []);
+  useEffect(() => {
+    onScroll();
+  }, [ready]);
 
   const ref = useRef<VirtualizerHandle>(null);
   const onScroll = useCallback(async () => {
@@ -71,7 +77,7 @@ const App = () => {
         ref.current.scrollToIndex(index - firstItemIndex_, { align: "start" });
       } else {
         const newRows = await loadMoreRows("down", index);
-        // NOTE: rows を完全に入れ替える場合は、スクロールの位置もリセットする必要がある
+        // NOTE: rows を完全に入れ替える場合は、スクロールの位置もリセットする
         ref.current.scrollTo(0);
         setShift(false);
         setRows(newRows);

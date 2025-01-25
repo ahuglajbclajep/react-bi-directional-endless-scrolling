@@ -37,6 +37,9 @@ const App = () => {
     [rows],
   );
 
+  // NOTE: rows を完全に入れ替える場合は、強制的に再描画してスクロール位置をリセットする
+  const [key, setKey] = useState(0);
+
   const ref = useRef<VirtuosoHandle>(null);
   const scrollTo = useCallback(
     async (index: number) => {
@@ -52,6 +55,7 @@ const App = () => {
         const newRows = await loadMoreRows("down", index);
         setRows(newRows);
         setFirstItemIndex(index);
+        setKey((prev) => prev + 1);
       }
     },
     [firstItemIndex, rows],
@@ -67,6 +71,7 @@ const App = () => {
         <ScrollPanel scrollTo={scrollTo} />
       </div>
       <Virtuoso
+        key={key}
         ref={ref}
         style={{ height: 300 }}
         data={rows}
