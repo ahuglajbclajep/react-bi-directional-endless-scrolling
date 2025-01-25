@@ -15,11 +15,11 @@ const INITIAL_ITEM_INDEX = 500;
 
 const App = () => {
   const [rows, setRows] = useState<string[]>([]);
-  // SEE: https://github.com/inokawa/virtua/blob/0.39.3/docs/react/interfaces/VirtualizerProps.md#shift
-  const [shift, setShift] = useState(false);
-
   // NOTE: API が絶対的なインデックスを必要としない場合は不要
   const firstItemIndex = useRef(INITIAL_ITEM_INDEX);
+
+  // SEE: https://github.com/inokawa/virtua/blob/0.39.3/docs/react/interfaces/VirtualizerProps.md#shift
+  const [shift, setShift] = useState(false);
 
   // NOTE: 同じ引数で何度も関数が呼ばれる挙動があるので、ロード中であるというフラグを作る
   const isLoading = useRef(false);
@@ -65,11 +65,14 @@ const App = () => {
     async (index: number) => {
       if (!ref.current) return;
 
+      // NOTE: インデックスが管理範囲内ならスクロールし、範囲外なら初期状態と同じように表示する
       const firstItemIndex_ = firstItemIndex.current;
       if (index >= firstItemIndex_ && index < firstItemIndex_ + rows.length) {
         ref.current.scrollToIndex(index - firstItemIndex_, { align: "start" });
       } else {
         const newRows = await loadMoreRows("down", index);
+        // NOTE: rows を完全に入れ替える場合は、スクロールの位置もリセットする必要がある
+        ref.current.scrollTo(0);
         setShift(false);
         setRows(newRows);
         firstItemIndex.current = index;

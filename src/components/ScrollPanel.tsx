@@ -23,12 +23,13 @@ const ScrollPanel = ({ scrollTo }: Props) => {
 
   return (
     <form className="flex flex-row gap-1" onSubmit={onClick}>
-      <Button>scroll to</Button>
+      <Button disabled={inputIndex === 0}>scroll to</Button>
       <input
         type="text"
         inputMode="numeric"
         pattern="\d*"
-        value={inputIndex}
+        placeholder="1000000"
+        value={inputIndex || ""}
         onChange={onChange}
         className="border border-gray-300 rounded-md focus:border-blue-300 px-1"
       />

@@ -42,6 +42,7 @@ const App = () => {
     async (index: number) => {
       if (!ref.current) return;
 
+      // NOTE: インデックスが管理範囲内ならスクロールし、範囲外なら初期状態と同じように表示する
       if (index >= firstItemIndex && index < firstItemIndex + rows.length) {
         ref.current.scrollToIndex({
           index: index - firstItemIndex,
@@ -79,6 +80,8 @@ const App = () => {
             </div>
           );
         }}
+        // SEE: https://github.com/petyosi/react-virtuoso/issues/1117
+        skipAnimationFrameInResizeObserver
       />
     </div>
   );
