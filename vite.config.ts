@@ -6,6 +6,7 @@ const inputHelper = (inputs: string[]) =>
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "./",
   plugins: [react()],
   build: {
     rollupOptions: {
