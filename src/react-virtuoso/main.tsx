@@ -4,6 +4,7 @@ import Title from "../components/Title";
 import ScrollPanel from "../components/ScrollPanel";
 import ScrollArea from "./ScrollArea";
 import { useScrollTo } from "../components/useScrollTo";
+import ScriptSize from "../components/ScriptSize";
 
 const App = () => {
   const { handler, scrollTo } = useScrollTo();
@@ -11,10 +12,13 @@ const App = () => {
   return (
     <div className="p-4 flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <Title
-          name="react-virtuoso"
-          link="https://github.com/petyosi/react-virtuoso"
-        />
+        <div className="flex items-end gap-2">
+          <Title
+            name="react-virtuoso"
+            link="https://github.com/petyosi/react-virtuoso"
+          />
+          <ScriptSize scriptName="react-virtuoso" />
+        </div>
         <ScrollPanel scrollTo={scrollTo} />
       </div>
       <ScrollArea initialIndex={500} handlerRef={handler} />
