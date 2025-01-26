@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
+import { Handle } from "./useScrollTo";
 
-type Props = {
-  scrollTo: (index: number) => void;
-};
+type Props = Handle;
 
 const ScrollPanel = ({ scrollTo }: Props) => {
   const [inputIndex, setInputIndex] = useState(0);
