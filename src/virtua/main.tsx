@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client";
 
 import Title from "../components/Title";
-import ScrollArea from "./ScrollArea";
 import ScrollPanel from "../components/ScrollPanel";
+import ScrollArea from "./ScrollArea";
 import { useScrollTo } from "../components/useScrollTo";
 
 const App = () => {
