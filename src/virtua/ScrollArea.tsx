@@ -20,6 +20,7 @@ type Props = {
 };
 
 const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
+  const ref = useRef<VirtualizerHandle>(null);
   const [rows, setRows] = useState<string[]>([]);
   // NOTE: API が絶対的なインデックスを必要としない場合は不要
   const firstItemIndex = useRef(initialIndex);
@@ -39,21 +40,27 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
     [],
   );
 
-  // NOTE: 上方向へのスクロールを可能にするため、最初に一度だけスクロール時の処理を呼ぶ
-  const [ready, setReady] = useState(false);
+  type LoadState = "preload" | "load" | "postload";
+  const [loadState, setLoadState] = useState<LoadState>("load");
   useEffect(() => {
+    if (loadState !== "load") return;
+
     (async () => {
-      const newRows = await loadMoreRows("down", firstItemIndex.current);
+      const firstItemIndexWithBuffer = firstItemIndex.current - CHUNK_SIZE / 2;
+      const newRows = await loadMoreRows("down", firstItemIndexWithBuffer);
       setShift(false);
       setRows(newRows);
-      setReady(true);
+      firstItemIndex.current = firstItemIndexWithBuffer;
+      setLoadState("postload");
     })();
-  }, []);
+  }, [loadMoreRows, loadState]);
   useEffect(() => {
-    onScroll();
-  }, [ready]);
+    if (loadState !== "postload") return;
 
-  const ref = useRef<VirtualizerHandle>(null);
+    ref.current?.scrollToIndex(CHUNK_SIZE / 2, { align: "start" });
+    setLoadState("postload");
+  }, [loadState]);
+
   const onScroll = useCallback(async () => {
     if (!ref.current || isLoading.current) return;
 
@@ -65,13 +72,13 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       );
       setShift(false);
       setRows((rows) => [...rows, ...newRows]);
-    } else if (ref.current.findStartIndex() === 0) {
+    } else if (ref.current.findStartIndex() <= 0) {
       const newRows = await loadMoreRows("up", firstItemIndex.current);
       setShift(true);
       setRows((rows) => [...newRows, ...rows]);
       firstItemIndex.current = firstItemIndex.current - CHUNK_SIZE;
     }
-  }, [rows]);
+  }, [loadMoreRows, rows.length]);
 
   const scrollTo = useCallback(
     async (index: number) => {
@@ -82,15 +89,11 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       if (index >= firstItemIndex_ && index < firstItemIndex_ + rows.length) {
         ref.current.scrollToIndex(index - firstItemIndex_, { align: "start" });
       } else {
-        const newRows = await loadMoreRows("down", index);
-        // NOTE: rows を完全に入れ替える場合は、スクロールの位置もリセットする
-        ref.current.scrollTo(0);
-        setShift(false);
-        setRows(newRows);
         firstItemIndex.current = index;
+        setLoadState("load");
       }
     },
-    [rows],
+    [rows.length],
   );
   useImperativeHandle(handlerRef, () => ({ scrollTo }), [scrollTo]);
 
