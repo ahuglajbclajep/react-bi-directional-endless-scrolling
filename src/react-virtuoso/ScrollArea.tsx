@@ -16,55 +16,55 @@ type Props = {
 };
 
 const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
+  const ref = useRef<VirtuosoHandle>(null);
   const [rows, setRows] = useState<string[]>([]);
-  const [firstItemIndex, setFirstItemIndex] = useState(initialIndex);
+  const [offsetFromFirstItem, setOffsetFromFirstItem] = useState(initialIndex);
 
   useEffect(() => {
     (async () => {
-      const newRows = await loadMoreRows("down", initialIndex);
+      const newRows = await loadMoreRows(offsetFromFirstItem);
       setRows(newRows);
+      setOffsetFromFirstItem(offsetFromFirstItem);
     })();
   }, []);
 
   const loadMoreRowsDown = useCallback(
     async (rowCount: number) => {
-      const newRows = await loadMoreRows("down", firstItemIndex + rowCount + 1);
+      const newRows = await loadMoreRows(offsetFromFirstItem + rowCount + 1);
       setRows((rows) => [...rows, ...newRows]);
     },
-    [rows, firstItemIndex],
+    [offsetFromFirstItem],
   );
 
-  const loadMoreRowsUp = useCallback(
-    async (index: number) => {
-      const newRows = await loadMoreRows("up", index);
-      setRows((rows) => [...newRows, ...rows]);
-      setFirstItemIndex((prev) => prev - CHUNK_SIZE);
-    },
-    [rows],
-  );
+  const loadMoreRowsUp = useCallback(async (index: number) => {
+    const newRows = await loadMoreRows(index - CHUNK_SIZE);
+    setRows((rows) => [...newRows, ...rows]);
+    setOffsetFromFirstItem((prev) => prev - newRows.length);
+  }, []);
 
   // NOTE: rows を完全に入れ替える場合は、強制的に再描画してスクロール位置をリセットする
   const [key, setKey] = useState(0);
-
-  const ref = useRef<VirtuosoHandle>(null);
   const scrollTo = useCallback(
     async (index: number) => {
       if (!ref.current) return;
 
       // NOTE: インデックスが管理範囲内ならスクロールし、範囲外なら初期状態と同じように表示する
-      if (index >= firstItemIndex && index < firstItemIndex + rows.length) {
+      if (
+        index >= offsetFromFirstItem &&
+        index < offsetFromFirstItem + rows.length
+      ) {
         ref.current.scrollToIndex({
-          index: index - firstItemIndex,
+          index: index - offsetFromFirstItem,
           align: "start",
         });
       } else {
-        const newRows = await loadMoreRows("down", index);
+        const newRows = await loadMoreRows(index);
         setRows(newRows);
-        setFirstItemIndex(index);
+        setOffsetFromFirstItem(index);
         setKey((prev) => prev + 1);
       }
     },
-    [firstItemIndex, rows],
+    [offsetFromFirstItem, rows.length],
   );
   useImperativeHandle(handlerRef, () => ({ scrollTo }), [scrollTo]);
 
@@ -74,7 +74,7 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       ref={ref}
       style={{ height: 300 }}
       data={rows}
-      firstItemIndex={firstItemIndex}
+      firstItemIndex={offsetFromFirstItem}
       startReached={loadMoreRowsUp}
       endReached={loadMoreRowsDown}
       itemContent={(index, rows) => {

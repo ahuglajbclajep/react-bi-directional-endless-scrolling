@@ -22,8 +22,8 @@ type Props = {
 const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
   const ref = useRef<VirtualizerHandle>(null);
   const [rows, setRows] = useState<string[]>([]);
-  // NOTE: API が絶対的なインデックスを必要としない場合は不要
-  const firstItemIndex = useRef(initialIndex);
+  // NOTE: rows[0] のデータまでの絶対的なオフセット、API がこれを必要としない場合は不要
+  const offsetFromFirstItem = useRef(initialIndex);
 
   // SEE: https://github.com/inokawa/virtua/blob/0.39.3/docs/react/interfaces/VirtualizerProps.md#shift
   const [shift, setShift] = useState(false);
@@ -46,11 +46,12 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
     if (loadState !== "load") return;
 
     (async () => {
-      const firstItemIndexWithBuffer = firstItemIndex.current - CHUNK_SIZE / 2;
-      const newRows = await loadMoreRows("down", firstItemIndexWithBuffer);
+      // NOTE: データがないと上方向へのスクロールができないので、バッファ込みでデータを取る
+      const offsetWithBuffer = offsetFromFirstItem.current - CHUNK_SIZE / 2;
+      const newRows = await loadMoreRows(offsetWithBuffer);
       setShift(false);
       setRows(newRows);
-      firstItemIndex.current = firstItemIndexWithBuffer;
+      offsetFromFirstItem.current = offsetWithBuffer;
       setLoadState("postload");
     })();
   }, [loadMoreRows, loadState]);
@@ -64,19 +65,19 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
   const onScroll = useCallback(async () => {
     if (!ref.current || isLoading.current) return;
 
-    const rowCount = rows.length;
-    if (ref.current.findEndIndex() + 1 === rowCount) {
-      const newRows = await loadMoreRows(
-        "down",
-        firstItemIndex.current + rowCount,
-      );
+    if (ref.current.findEndIndex() + 1 === rows.length) {
+      // NOTE: 下方向にスクロールして下限に到達した場合
+      const offsetFromDataTop = offsetFromFirstItem.current + rows.length;
+      const newRows = await loadMoreRows(offsetFromDataTop);
       setShift(false);
       setRows((rows) => [...rows, ...newRows]);
     } else if (ref.current.findStartIndex() <= 0) {
-      const newRows = await loadMoreRows("up", firstItemIndex.current);
+      // NOTE: 上方向にスクロールして上限に到達した場合
+      const offsetFromDataTop = offsetFromFirstItem.current - CHUNK_SIZE;
+      const newRows = await loadMoreRows(offsetFromDataTop);
       setShift(true);
       setRows((rows) => [...newRows, ...rows]);
-      firstItemIndex.current = firstItemIndex.current - CHUNK_SIZE;
+      offsetFromFirstItem.current -= newRows.length;
     }
   }, [loadMoreRows, rows.length]);
 
@@ -85,11 +86,11 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       if (!ref.current) return;
 
       // NOTE: インデックスが管理範囲内ならスクロールし、範囲外なら初期状態と同じように表示する
-      const firstItemIndex_ = firstItemIndex.current;
-      if (index >= firstItemIndex_ && index < firstItemIndex_ + rows.length) {
-        ref.current.scrollToIndex(index - firstItemIndex_, { align: "start" });
+      const offset = offsetFromFirstItem.current;
+      if (index >= offset && index < offset + rows.length) {
+        ref.current.scrollToIndex(index - offset, { align: "start" });
       } else {
-        firstItemIndex.current = index;
+        offsetFromFirstItem.current = index;
         setLoadState("load");
       }
     },

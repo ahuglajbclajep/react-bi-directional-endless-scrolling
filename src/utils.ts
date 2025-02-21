@@ -1,13 +1,8 @@
 export const CHUNK_SIZE = 10;
 
-export async function loadMoreRows(
-  direction: "up" | "down",
-  fromIndex: number,
-) {
+export async function loadMoreRows(offset: number) {
   await new Promise((r) => setTimeout(r, 100));
-  const rows = [...Array(CHUNK_SIZE)].map((_, i) =>
-    direction === "up" ? `#${fromIndex - CHUNK_SIZE + i}` : `#${fromIndex + i}`,
-  );
+  const rows = [...Array(CHUNK_SIZE)].map((_, i) => `#${offset + i}`);
   return rows;
 }
 
