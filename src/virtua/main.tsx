@@ -10,8 +10,8 @@ const App = () => {
   const { handler, scrollTo } = useScrollTo();
 
   return (
-    <div className="p-4 flex flex-col gap-1">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-1">
+      <div className="flex gap-1 flex-col sm:flex-row sm:justify-between">
         <div className="flex items-end gap-2">
           <Title name="virtua" link="https://github.com/inokawa/virtua" />
           <ScriptSize scriptName="virtua" />
