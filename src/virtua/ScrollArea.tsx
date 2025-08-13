@@ -66,21 +66,10 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
     }
   }, [loadMoreRows, rows.length]);
 
-  useEffect(() => {
-    (async () => {
-      // NOTE: データがないと上方向へのスクロールができないので、バッファ込みでデータを取る
-      const offsetWithBuffer =
-        offsetFromFirstItem.current - Math.floor(CHUNK_SIZE / 2);
-      const newRows = await loadMoreRows(offsetWithBuffer);
-      setShift(false);
-      setRows(newRows);
-      offsetFromFirstItem.current = offsetWithBuffer;
-    })();
-  }, [loadMoreRows]);
-
-  // NOTE: scrollTo のための状態
+  // NOTE: scrollTo のための状態だが、この実装では初期データの取得にも使う
   type LoadState = "preload" | "load" | "postload";
   const [loadState, setLoadState] = useState<LoadState>("load");
+
   const scrollTo = useCallback(
     async (index: number) => {
       if (!ref.current) return;
@@ -103,6 +92,7 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       return;
     }
     (async () => {
+      // NOTE: データがないと上方向へのスクロールができないので、バッファ込みでデータを取る
       const offsetWithBuffer =
         offsetFromFirstItem.current - Math.floor(CHUNK_SIZE / 2);
       const newRows = await loadMoreRows(offsetWithBuffer);

@@ -20,14 +20,6 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
   const [rows, setRows] = useState<string[]>([]);
   const [offsetFromFirstItem, setOffsetFromFirstItem] = useState(initialIndex);
 
-  useEffect(() => {
-    (async () => {
-      const newRows = await loadMoreRows(offsetFromFirstItem);
-      setRows(newRows);
-      setOffsetFromFirstItem(offsetFromFirstItem);
-    })();
-  }, []);
-
   const loadMoreRowsDown = useCallback(
     async (rowCount: number) => {
       const newRows = await loadMoreRows(offsetFromFirstItem + rowCount + 1);
@@ -40,6 +32,14 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
     const newRows = await loadMoreRows(index - CHUNK_SIZE);
     setRows((rows) => [...newRows, ...rows]);
     setOffsetFromFirstItem((prev) => prev - newRows.length);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const newRows = await loadMoreRows(offsetFromFirstItem);
+      setRows(newRows);
+      setOffsetFromFirstItem(offsetFromFirstItem);
+    })();
   }, []);
 
   // NOTE: rows を完全に入れ替える場合は、強制的に再描画してスクロール位置をリセットする
