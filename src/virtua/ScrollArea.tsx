@@ -40,30 +40,13 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
     [],
   );
 
-  type LoadState = "preload" | "load" | "postload";
-  const [loadState, setLoadState] = useState<LoadState>("load");
-  useEffect(() => {
-    if (loadState !== "load") return;
-
-    (async () => {
-      // NOTE: データがないと上方向へのスクロールができないので、バッファ込みでデータを取る
-      const offsetWithBuffer = offsetFromFirstItem.current - CHUNK_SIZE / 2;
-      const newRows = await loadMoreRows(offsetWithBuffer);
-      setShift(false);
-      setRows(newRows);
-      offsetFromFirstItem.current = offsetWithBuffer;
-      setLoadState("postload");
-    })();
-  }, [loadMoreRows, loadState]);
-  useEffect(() => {
-    if (loadState !== "postload") return;
-
-    ref.current?.scrollToIndex(CHUNK_SIZE / 2, { align: "start" });
-    setLoadState("postload");
-  }, [loadState]);
-
+  // NOTE: onScroll は rows の更新によって自身を再度呼び出すことがあるため、更新直後のスクロールをスキップする
+  const skipScroll = useRef(true);
   const onScroll = useCallback(async () => {
-    if (!ref.current || isLoading.current) return;
+    if (!ref.current || isLoading.current || skipScroll.current) {
+      skipScroll.current = false;
+      return;
+    }
 
     if (ref.current.findEndIndex() + 1 === rows.length) {
       // NOTE: 下方向にスクロールして下限に到達した場合
@@ -71,6 +54,7 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       const newRows = await loadMoreRows(offsetFromDataTop);
       setShift(false);
       setRows((rows) => [...rows, ...newRows]);
+      skipScroll.current = true;
     } else if (ref.current.findStartIndex() <= 0) {
       // NOTE: 上方向にスクロールして上限に到達した場合
       const offsetFromDataTop = offsetFromFirstItem.current - CHUNK_SIZE;
@@ -78,9 +62,25 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       setShift(true);
       setRows((rows) => [...newRows, ...rows]);
       offsetFromFirstItem.current -= newRows.length;
+      skipScroll.current = true;
     }
   }, [loadMoreRows, rows.length]);
 
+  useEffect(() => {
+    (async () => {
+      // NOTE: データがないと上方向へのスクロールができないので、バッファ込みでデータを取る
+      const offsetWithBuffer =
+        offsetFromFirstItem.current - Math.floor(CHUNK_SIZE / 2);
+      const newRows = await loadMoreRows(offsetWithBuffer);
+      setShift(false);
+      setRows(newRows);
+      offsetFromFirstItem.current = offsetWithBuffer;
+    })();
+  }, [loadMoreRows]);
+
+  // NOTE: scrollTo のための状態
+  type LoadState = "preload" | "load" | "postload";
+  const [loadState, setLoadState] = useState<LoadState>("load");
   const scrollTo = useCallback(
     async (index: number) => {
       if (!ref.current) return;
@@ -96,6 +96,30 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
     },
     [rows.length],
   );
+  // NOTE: load → postload → preload
+  const offsetForJump = useRef(0); // ジャンプする位置を一時的に記憶するのに使う
+  useEffect(() => {
+    if (loadState !== "load") {
+      return;
+    }
+    (async () => {
+      const offsetWithBuffer =
+        offsetFromFirstItem.current - Math.floor(CHUNK_SIZE / 2);
+      const newRows = await loadMoreRows(offsetWithBuffer);
+      setShift(false);
+      setRows(newRows);
+      offsetForJump.current = offsetFromFirstItem.current - offsetWithBuffer;
+      offsetFromFirstItem.current = offsetWithBuffer;
+      setLoadState("postload");
+    })();
+  }, [loadMoreRows, loadState]);
+  useEffect(() => {
+    if (loadState !== "postload") {
+      return;
+    }
+    ref.current?.scrollToIndex(offsetForJump.current, { align: "start" });
+    setLoadState("preload");
+  }, [loadState]);
   useImperativeHandle(handlerRef, () => ({ scrollTo }), [scrollTo]);
 
   return (
