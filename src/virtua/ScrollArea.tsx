@@ -67,8 +67,8 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
   }, [loadMoreRows, rows.length]);
 
   // NOTE: scrollTo のための状態だが、この実装では初期データの取得にも使う
-  type LoadState = "preload" | "load" | "postload";
-  const [loadState, setLoadState] = useState<LoadState>("load");
+  type LoadState = "ready" | "loading" | "loadend";
+  const [loadState, setLoadState] = useState<LoadState>("loading");
 
   const scrollTo = useCallback(
     async (index: number) => {
@@ -80,15 +80,14 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
         ref.current.scrollToIndex(index - offset, { align: "start" });
       } else {
         offsetFromFirstItem.current = index;
-        setLoadState("load");
+        setLoadState("loading");
       }
     },
     [rows.length],
   );
-  // NOTE: load → postload → preload
   const offsetForJump = useRef(0); // ジャンプする位置を一時的に記憶するのに使う
   useEffect(() => {
-    if (loadState !== "load") {
+    if (loadState !== "loading") {
       return;
     }
     (async () => {
@@ -100,15 +99,15 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       setRows(newRows);
       offsetForJump.current = offsetFromFirstItem.current - offsetWithBuffer;
       offsetFromFirstItem.current = offsetWithBuffer;
-      setLoadState("postload");
+      setLoadState("loadend");
     })();
   }, [loadMoreRows, loadState]);
   useEffect(() => {
-    if (loadState !== "postload") {
+    if (loadState !== "loadend") {
       return;
     }
     ref.current?.scrollToIndex(offsetForJump.current, { align: "start" });
-    setLoadState("preload");
+    setLoadState("ready");
   }, [loadState]);
   useImperativeHandle(handlerRef, () => ({ scrollTo }), [scrollTo]);
 
