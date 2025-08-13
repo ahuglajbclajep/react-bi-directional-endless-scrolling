@@ -18,11 +18,12 @@ type Props = {
 const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
   const ref = useRef<VirtuosoHandle>(null);
   const [rows, setRows] = useState<string[]>([]);
-  const [offsetFromFirstItem, setOffsetFromFirstItem] = useState(initialIndex);
+  const offsetFromFirstItem = useRef(initialIndex);
 
   const loadMoreRowsDown = useCallback(
     async (rowCount: number) => {
-      const newRows = await loadMoreRows(offsetFromFirstItem + rowCount + 1);
+      const offsetFromDataTop = offsetFromFirstItem.current + rowCount + 1;
+      const newRows = await loadMoreRows(offsetFromDataTop);
       setRows((rows) => [...rows, ...newRows]);
     },
     [offsetFromFirstItem],
@@ -31,14 +32,13 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
   const loadMoreRowsUp = useCallback(async (index: number) => {
     const newRows = await loadMoreRows(index - CHUNK_SIZE);
     setRows((rows) => [...newRows, ...rows]);
-    setOffsetFromFirstItem((prev) => prev - newRows.length);
+    offsetFromFirstItem.current -= newRows.length;
   }, []);
 
   useEffect(() => {
     (async () => {
-      const newRows = await loadMoreRows(offsetFromFirstItem);
+      const newRows = await loadMoreRows(offsetFromFirstItem.current);
       setRows(newRows);
-      setOffsetFromFirstItem(offsetFromFirstItem);
     })();
   }, []);
 
@@ -49,18 +49,16 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       if (!ref.current) return;
 
       // NOTE: インデックスが管理範囲内ならスクロールし、範囲外なら初期状態と同じように表示する
-      if (
-        index >= offsetFromFirstItem &&
-        index < offsetFromFirstItem + rows.length
-      ) {
+      const offset = offsetFromFirstItem.current;
+      if (index >= offset && index < offset + rows.length) {
         ref.current.scrollToIndex({
-          index: index - offsetFromFirstItem,
+          index: index - offset,
           align: "start",
         });
       } else {
         const newRows = await loadMoreRows(index);
         setRows(newRows);
-        setOffsetFromFirstItem(index);
+        offsetFromFirstItem.current = index;
         setKey((prev) => prev + 1);
       }
     },
@@ -74,7 +72,7 @@ const ScrollArea = ({ initialIndex, handlerRef }: Props) => {
       ref={ref}
       style={{ height: 300 }}
       data={rows}
-      firstItemIndex={offsetFromFirstItem}
+      firstItemIndex={offsetFromFirstItem.current}
       startReached={loadMoreRowsUp}
       endReached={loadMoreRowsDown}
       itemContent={(index, rows) => {
